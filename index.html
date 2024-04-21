@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geometry Dash-like Game</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #f0f0f0;
+    text-align: center;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+  }
+  #gameText {
+    font-family: Arial, sans-serif;
+    font-size: 24px;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="800" height="400"></canvas>
+<div id="gameText">Scuffed Dash</div>
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  const player = {
+    x: 50,
+    y: canvas.height / 2,
+    width: 50,
+    height: 50,
+    velocityY: 0,
+    gravity: 0.7,
+    jumpStrength: -15,
+    color: '#0000FF',
+    isJumping: false,
+    jump: function() {
+      if (!this.isJumping) {
+        this.velocityY = this.jumpStrength;
+        this.isJumping = true;
+      }
+    },
+    update: function() {
+      this.velocityY += this.gravity;
+      this.y += this.velocityY;
+
+      if (this.y + this.height > canvas.height) {
+        this.y = canvas.height - this.height;
+        this.velocityY = 0;
+        this.isJumping = false;
+      }
+    },
+    draw: function() {
+      ctx.fillStyle = this.color;
+      ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+  };
+
+  const spikes = [];
+  let score = 0;
+
+  class Spike {
+    constructor(x, y, width, height) {
+      this.x = x;
+      this.y = y;
+      this.width = width;
+      this.height = height;
+    }
+
+    draw() {
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.y + this.height);
+      ctx.lineTo(this.x + this.width / 2, this.y);
+      ctx.lineTo(this.x + this.width, this.y + this.height);
+      ctx.closePath();
+      ctx.fillStyle = '#FF0000';
+      ctx.fill();
+    }
+
+    update() {
+      this.x -= 5;
+
+      if (
+        player.x < this.x + this.width &&
+        player.x + player.width > this.x &&
+        player.y < this.y + this.height &&
+        player.y + player.height > this.y
+      ) {
+        gameOver();
+      } else if (player.x > this.x + this.width && !this.passed) {
+        score++; // Increment score if the player passed the spike
+        this.passed = true;
+      }
+    }
+  }
+
+  function createSpike() {
+    const spikeHeight = 30;
+    const spike = new Spike(canvas.width, canvas.height - spikeHeight, 30, spikeHeight);
+    spikes.push(spike);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    player.draw();
+    spikes.forEach(spike => spike.draw());
+
+    // Display score
+    ctx.fillStyle = '#000';
+    ctx.font = '20px Arial';
+    ctx.fillText('Score: ' + score, 10, 30);
+  }
+
+  function update() {
+    player.update();
+    spikes.forEach(spike => spike.update());
+  }
+
+  function gameLoop() {
+    if (!isGameOver) {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+  }
+
+  let isGameOver = false;
+
+  function gameOver() {
+    isGameOver = true;
+    alert('Game Over! Your score: ' + score);
+    location.reload(); // Reload the page to restart the game
+  }
+
+  document.addEventListener('keydown', function(event) {
+    if (event.code === 'Space') {
+      player.jump();
+    }
+  });
+
+  document.addEventListener('click', function() {
+    player.jump();
+  });
+
+  setInterval(createSpike, 1500);
+  gameLoop();
+</script>
+</body>
+</html>
